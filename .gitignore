@@ -26,3 +26,5 @@ compile.sh
 .vscode/
 out
 build
+.ccls-cache
+tags
