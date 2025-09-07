@@ -1,7 +1,38 @@
 #!/bin/bash
 
+# Build variables
+ENV=Release
+
+# Functions
+show_help() {
+    echo "This script is a front end for project build and clean up tasks, which are actually handled by Make"
+    echo "Usage: bash manager.sh -<option> <argument (OPTIONAL)> ..."
+    echo "It accepts chained options and tries to execute then in order, unknown"\
+        " options are ignored, the script only stops when it either finish its"\
+        " tasks or one of them fails\n"
+    echo "Valid options are:"
+    echo "  -h                    | Show this message"
+    echo "  -b <(OPTIONAL) debug> | Build the project, if the \"debug\" argument is passed, it will build with debug rules"
+    echo "  -c                    | Clean the project"
+    echo "  -t                    | Generate symbols tags, only util if you're "\
+        "using vim or other text editor that consumes ctags files to go to "\
+        "symbols definitions"
+    echo "  -ut                   | Remove the tags file"
+    echo "  -p <(OPTIONAL) gdb>   | Runs the generated binary, if the argument "\
+        "\"gdb\" is used, it will open the gdb to debug the game, but only if a"\
+        "debug binary was generated"
+}
+
+
 play_test() {
-    ./bin/Linux64/Debug/lsdl2srb2kart
+    if [[ ${1,,} == "gdb" ]] && [ -f ./bin/Linux64/Debug/lsdl2srb2kart ]; then
+        echo "Executing gdb"
+        optn=$((optn+1))
+        ENV=Debug
+        BIN=gdb
+    fi
+    
+    $BIN ./bin/Linux64/$ENV/lsdl2srb2kart
 }
 
 clean_tags() {
@@ -27,13 +58,29 @@ clean_build() {
 }
 
 build() {
-    make LINUX64=1 SDL=1 NOUPX=1 DEBUGMODE=1 -j8
+    if [[ ${1,,} == "debug" ]]; then
+        echo "Generating debug build"
+        optn=$((optn+1))
+        DEBUG=1
+        ENV=Debug
+    fi
+
+    make LINUX64=1 SDL=1 NOUPX=1 DEBUGMODE=$DEBUG -j8
 }
 
-for (( argn=1; argn <= $# ; argn++)); do
-    case "${!argn}" in
+if [[ $# -lt 1 ]]; then
+    show_help
+    exit 1
+fi
+
+for (( optn=1; optn <= $# ; optn++)); do
+    arg=$((optn+1))
+
+    case "${!optn}" in
+        "-h" )
+            show_help ;;
         "-b" )
-            build ;;
+            build ${!arg} ;;
         "-c" )
             clean_build ;;
         "-t" )
@@ -41,9 +88,9 @@ for (( argn=1; argn <= $# ; argn++)); do
         "-ut" )
             clean_tags ;;
         "-p" )
-            play_test ;;
+            play_test ${!arg} ;;
         *)
-            echo "Invalid option: \"${!argn}\" - ignoring.." ;;
+            echo "Invalid option: \"${!optn}\" - ignoring.." ;;
     esac
 
     if [ $? -ne 0 ]; then
