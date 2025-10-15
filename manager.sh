@@ -50,7 +50,8 @@ gen_tags() {
         --exclude=objs \
         --exclude=.git \
         --exclude=.ccls-cache \
-        --exclude=.circleci
+        --exclude=.circleci \
+        .
 }
 
 clean_build() {
